@@ -27,8 +27,9 @@ namespace BookCRUD.Controllers
                 return Problem("Entity set 'ApplicationDbContext.Books' is null.");
             }
 
-            // Guardar el filtro actual para la vista
+            // Guardar el filtro y orden actuales para la vista
             ViewData["CurrentFilter"] = searchString;
+            ViewData["CurrentSort"] = sortOrder;
 
             // Parámetros de ordenación
             ViewData["TitleSortParam"] = String.IsNullOrEmpty(sortOrder) ? "title_desc" : "";

@@ -1,47 +1,132 @@
 ﻿@model IEnumerable<BookCRUD.Models.Book>
 
 @{
-    ViewData["Title"] = "Index";
+    ViewData["Title"] = "Librería";
 }
 
-<h1>Index</h1>
+<div class="container py-5">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="display-4 fw-bold text-primary">Librería</h1>
+            <p class="lead">Explora y gestiona tu colección de libros.</p>
+        </div>
+        <div class="col-md-4 d-flex align-items-center justify-content-end">
+            <a asp-action="Create" class="btn btn-primary btn-lg">
+                <i class="bi bi-plus-circle"></i> Añadir Libro
+            </a>
+        </div>
+    </div>
 
-<p>
-    <a asp-action="Create">Create New</a>
-</p>
-<table class="table">
-    <thead>
-        <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.Author)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Title)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.PublicationDate)
-            </th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-@foreach (var item in Model) {
-        <tr>
-            <td>
-                @Html.DisplayFor(modelItem => item.Author)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Title)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.PublicationDate)
-            </td>
-            <td>
-                <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
-                <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
-                <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>
-            </td>
-        </tr>
-}
-    </tbody>
-</table>
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-light shadow-sm">
+                <div class="card-body">
+                    <form asp-action="Index" method="get" class="row g-3">
+                        <div class="col-md-8">
+                            <div class="input-group">
+                                <span class="input-group-text bg-white">
+                                    <i class="bi bi-search"></i>
+                                </span>
+                                <input type="text" name="searchString" value="@ViewData["CurrentFilter"]" class="form-control form-control-lg" placeholder="Buscar por título o autor..." />
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <button type="submit" class="btn btn-primary btn-lg me-2">Buscar</button>
+                            <a asp-action="Index" class="btn btn-outline-secondary btn-lg">Limpiar</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-info p-4 text-center">
+            <i class="bi bi-info-circle fs-1 d-block mb-3"></i>
+            <h4>No se encontraron libros</h4>
+            <p>Puedes comenzar añadiendo un nuevo libro a tu biblioteca.</p>
+            <a asp-action="Create" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Añadir mi primer libro
+            </a>
+        </div>
+    }
+    else
+    {
+        <div class="card shadow-sm">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-primary">
+                            <tr>
+                                <th class="ps-4">
+                                    <a asp-action="Index" asp-route-sortOrder="@ViewData["AuthorSortParam"]" class="text-dark text-decoration-none">
+                                        <i class="bi bi-person-fill me-1"></i> @Html.DisplayNameFor(model => model.Author)
+                                        @if (ViewData["CurrentSort"]?.ToString() == "author")
+                                        {
+                                            <i class="bi bi-arrow-up-short"></i>
+                                        }
+                                        else if (ViewData["CurrentSort"]?.ToString() == "author_desc")
+                                        {
+                                            <i class="bi bi-arrow-down-short"></i>
+                                        }
+                                    </a>
+                                </th>
+                                <th>
+                                    <a asp-action="Index" asp-route-sortOrder="@ViewData["TitleSortParam"]" class="text-dark text-decoration-none">
+                                        <i class="bi bi-book-fill me-1"></i> @Html.DisplayNameFor(model => model.Title)
+                                        @if (ViewData["CurrentSort"]?.ToString() == "")
+                                        {
+                                            <i class="bi bi-arrow-up-short"></i>
+                                        }
+                                        else if (ViewData["CurrentSort"]?.ToString() == "title_desc")
+                                        {
+                                            <i class="bi bi-arrow-down-short"></i>
+                                        }
+                                    </a>
+                                </th>
+                                <th>
+                                    <a asp-action="Index" asp-route-sortOrder="@ViewData["DateSortParam"]" class="text-dark text-decoration-none">
+                                        <i class="bi bi-calendar-fill me-1"></i> @Html.DisplayNameFor(model => model.PublicationDate)
+                                        @if (ViewData["CurrentSort"]?.ToString() == "date")
+                                        {
+                                            <i class="bi bi-arrow-up-short"></i>
+                                        }
+                                        else if (ViewData["CurrentSort"]?.ToString() == "date_desc")
+                                        {
+                                            <i class="bi bi-arrow-down-short"></i>
+                                        }
+                                    </a>
+                                </th>
+                                <th class="text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model)
+                            {
+                                <tr>
+                                    <td class="ps-4">@Html.DisplayFor(modelItem => item.Author)</td>
+                                    <td>@Html.DisplayFor(modelItem => item.Title)</td>
+                                    <td>@item.PublicationDate.ToString("dd/MM/yyyy")</td>
+                                    <td class="text-center">
+                                        <div class="btn-group" role="group">
+                                            <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-warning">
+                                                <i class="bi bi-pencil-fill"></i> Editar
+                                            </a>
+                                            <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-info text-white">
+                                                <i class="bi bi-eye-fill"></i> Detalles
+                                            </a>
+                                            <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-danger">
+                                                <i class="bi bi-trash-fill"></i> Eliminar
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+</div>

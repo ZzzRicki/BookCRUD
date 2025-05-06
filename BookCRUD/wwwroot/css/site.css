@@ -61,3 +61,62 @@ body {
 .card-title {
     font-weight: 600;
 }
+/* Estilos para la tabla */
+.table-primary {
+    background-color: #e3f2fd;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(52, 152, 219, 0.05);
+}
+
+/* Estilos para los botones de acción */
+.btn-warning {
+    background-color: #f39c12;
+    border-color: #f39c12;
+    color: white;
+}
+
+    .btn-warning:hover {
+        background-color: #e67e22;
+        border-color: #e67e22;
+        color: white;
+    }
+
+.btn-info {
+    background-color: #3498db;
+    border-color: #3498db;
+    color: white;
+}
+
+    .btn-info:hover {
+        background-color: #2980b9;
+        border-color: #2980b9;
+        color: white;
+    }
+
+.btn-danger {
+    background-color: #e74c3c;
+    border-color: #e74c3c;
+}
+
+    .btn-danger:hover {
+        background-color: #c0392b;
+        border-color: #c0392b;
+    }
+
+/* Estilos para los encabezados de la tabla */
+.table th a {
+    display: flex;
+    align-items: center;
+    font-weight: 600;
+}
+
+    .table th a:hover {
+        color: #3498db !important;
+    }
+
+/* Estilos para las filas de la tabla */
+.table td {
+    vertical-align: middle;
+}
