@@ -11,5 +11,23 @@ namespace BookCRUD.Data
         }
 
         public DbSet<Book> Books { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+
+            // Configurar las propiedades opcionales
+            modelBuilder.Entity<Book>()
+                .Property(b => b.FilePath)
+                .IsRequired(false);
+
+            modelBuilder.Entity<Book>()
+                .Property(b => b.Content)
+                .IsRequired(false);
+
+            modelBuilder.Entity<Book>()
+                .Property(b => b.CoverImageUrl)
+                .IsRequired(false);
+        }
     }
 }

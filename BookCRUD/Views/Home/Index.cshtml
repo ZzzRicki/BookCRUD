@@ -1,96 +1,62 @@
 ﻿@model IEnumerable<BookCRUD.Models.Book>
 
 @{
-    ViewData["Title"] = "Biblioteca Virtual";
+    ViewData["Title"] = "Inicio";
 }
 
 <div class="container py-5">
     <div class="row mb-4">
         <div class="col-md-8">
-            <h1 class="display-4 fw-bold text-primary">Biblioteca Virtual</h1>
-            <p class="lead">Explora nuestra colección de libros y gestiona tu biblioteca personal.</p>
+            <h1 class="display-4 fw-bold text-primary">Biblioteca de Libros</h1>
+            <p class="lead">Explora nuestra colección de libros o añade los tuyos propios.</p>
         </div>
-        <div class="col-md-4 d-flex align-items-center justify-content-end">
-            <a asp-controller="Books" asp-action="Create" class="btn btn-primary btn-lg">
+        <div class="col-md-4 d-flex justify-content-end align-items-center">
+            <a asp-controller="Books" asp-action="Create" class="btn btn-primary">
                 <i class="bi bi-plus-circle"></i> Añadir Libro
             </a>
         </div>
     </div>
 
     <div class="row mb-4">
-        <div class="col-12">
-            <div class="card bg-light">
-                <div class="card-body">
-                    <form asp-action="Index" method="get" class="row g-3">
-                        <div class="col-md-8">
-                            <div class="input-group">
-                                <span class="input-group-text bg-white">
-                                    <i class="bi bi-search"></i>
-                                </span>
-                                <input type="text" name="searchString" value="@ViewData["CurrentFilter"]" class="form-control form-control-lg" placeholder="Buscar por título o autor..." />
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <button type="submit" class="btn btn-primary btn-lg me-2">Buscar</button>
-                            <a asp-action="Index" class="btn btn-outline-secondary btn-lg">Limpiar</a>
-                        </div>
-                    </form>
-                </div>
-            </div>
+        <div class="col-md-6">
+            <form asp-action="Index" method="get" class="d-flex">
+                <input type="text" name="searchString" value="@ViewData["CurrentFilter"]" class="form-control me-2" placeholder="Buscar por título o autor..." />
+                <button type="submit" class="btn btn-outline-primary">
+                    <i class="bi bi-search"></i>
+                </button>
+            </form>
+        </div>
+        <div class="col-md-6 text-end">
+            <a asp-controller="Books" asp-action="Index" class="btn btn-outline-secondary">
+                <i class="bi bi-journal-richtext"></i> Ver todos los libros
+            </a>
         </div>
     </div>
 
-    @if (!Model.Any())
-    {
-        <div class="alert alert-info p-4 text-center">
-            <i class="bi bi-info-circle fs-1 d-block mb-3"></i>
-            <h4>No se encontraron libros</h4>
-            <p>Puedes comenzar añadiendo un nuevo libro a tu biblioteca.</p>
-            <a asp-controller="Books" asp-action="Create" class="btn btn-primary">
-                <i class="bi bi-plus-circle"></i> Añadir mi primer libro
-            </a>
-        </div>
-    }
-    else
-    {
-        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-            @foreach (var book in Model)
-            {
-                <div class="col">
-                    <div class="card h-100 shadow-sm hover-shadow">
-                        <div class="card-body">
-                            <h5 class="card-title text-primary">@book.Title</h5>
-                            <h6 class="card-subtitle mb-2 text-muted">@book.Author</h6>
-                            <p class="card-text">
-                                <small class="text-muted">
-                                    <i class="bi bi-calendar"></i> @book.PublicationDate.ToString("dd/MM/yyyy")
-                                </small>
-                            </p>
-                        </div>
-                        <div class="card-footer bg-transparent border-top-0">
-                            <div class="d-flex justify-content-between">
-                                <a asp-controller="Books" asp-action="Details" asp-route-id="@book.Id" class="btn btn-sm btn-outline-primary">
-                                    <i class="bi bi-eye"></i> Detalles
-                                </a>
-                                <div>
-                                    <a asp-controller="Books" asp-action="Edit" asp-route-id="@book.Id" class="btn btn-sm btn-warning">
-                                        <i class="bi bi-pencil"></i> Editar
-                                    </a>
-                                    <a asp-controller="Books" asp-action="Delete" asp-route-id="@book.Id" class="btn btn-sm btn-danger">
-                                        <i class="bi bi-trash"></i> Eliminar
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
+    <div class="row">
+        @foreach (var item in Model)
+        {
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title">@item.Title</h5>
+                        <h6 class="card-subtitle mb-2 text-muted">@item.Author</h6>
+                        <p class="card-text">
+                            <small class="text-muted">
+                                <i class="bi bi-calendar"></i> @item.PublicationDate.ToString("dd/MM/yyyy")
+                            </small>
+                        </p>
+                    </div>
+                    <div class="card-footer bg-transparent border-top-0">
+                        <a asp-controller="Books" asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-info-circle"></i> Detalles
+                        </a>
+                        <a asp-controller="Books" asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-warning">
+                            <i class="bi bi-pencil"></i> Editar
+                        </a>
                     </div>
                 </div>
-            }
-        </div>
-
-        <div class="d-flex justify-content-center mt-4">
-            <a asp-controller="Books" asp-action="Index" class="btn btn-outline-primary">
-                Ver todos los libros <i class="bi bi-arrow-right"></i>
-            </a>
-        </div>
-    }
+            </div>
+        }
+    </div>
 </div>

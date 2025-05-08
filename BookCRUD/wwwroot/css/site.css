@@ -120,3 +120,130 @@ body {
 .table td {
     vertical-align: middle;
 }
+/* Estilos para el modo de lectura */
+.dark-mode {
+    background-color: #121212;
+    color: #e0e0e0;
+}
+
+    .dark-mode .navbar-reading {
+        background-color: #1e1e1e;
+        border-bottom: 1px solid #333;
+    }
+
+    .dark-mode .navbar-light .navbar-brand,
+    .dark-mode .navbar-light .navbar-nav .nav-link {
+        color: #e0e0e0;
+    }
+
+    .dark-mode .card {
+        background-color: #1e1e1e;
+        border-color: #333;
+    }
+
+    .dark-mode .reader-content {
+        color: #e0e0e0;
+        background-color: #1e1e1e;
+    }
+
+    .dark-mode .btn-outline-primary,
+    .dark-mode .btn-outline-secondary {
+        color: #e0e0e0;
+        border-color: #666;
+    }
+
+        .dark-mode .btn-outline-primary:hover,
+        .dark-mode .btn-outline-secondary:hover {
+            background-color: #333;
+            color: #fff;
+        }
+
+/* Estilos para los botones */
+.btn-warning {
+    background-color: #f39c12;
+    border-color: #f39c12;
+    color: white;
+}
+
+    .btn-warning:hover {
+        background-color: #e67e22;
+        border-color: #e67e22;
+        color: white;
+    }
+
+.btn-info {
+    background-color: #3498db;
+    border-color: #3498db;
+    color: white;
+}
+
+    .btn-info:hover {
+        background-color: #2980b9;
+        border-color: #2980b9;
+        color: white;
+    }
+
+.btn-danger {
+    background-color: #e74c3c;
+    border-color: #e74c3c;
+}
+
+    .btn-danger:hover {
+        background-color: #c0392b;
+        border-color: #c0392b;
+    }
+
+.btn-success {
+    background-color: #2ecc71;
+    border-color: #2ecc71;
+}
+
+    .btn-success:hover {
+        background-color: #27ae60;
+        border-color: #27ae60;
+    }
+/* Estilos para el visor de PDF */
+.pdf-viewer {
+    width: 100%;
+    margin: 0 auto;
+}
+
+#pdf-viewer-container {
+    display: flex;
+    justify-content: center;
+    overflow: auto;
+    max-height: 80vh;
+    margin-bottom: 20px;
+}
+
+#pdf-canvas {
+    border: 1px solid #ddd;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.dark-mode #pdf-canvas {
+    border-color: #444;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+}
+
+#pdf-toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background-color: inherit;
+    padding: 10px 0;
+}
+
+.dark-mode #pdf-toolbar {
+    background-color: #1e1e1e;
+}
+
+/* Estilos para pantalla completa */
+#pdf-viewer-container:fullscreen {
+    background-color: white;
+    padding: 20px;
+}
+
+.dark-mode #pdf-viewer-container:fullscreen {
+    background-color: #1e1e1e;
+}

@@ -1,44 +1,103 @@
 ﻿@model BookCRUD.Models.Book
 
 @{
-    ViewData["Title"] = "Edit";
+    ViewData["Title"] = "Editar libro";
 }
 
-<h1>Edit</h1>
+<div class="container py-5">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="display-4 fw-bold text-primary">Editar libro</h1>
+            <p class="lead">Actualiza la información del libro.</p>
+        </div>
+        <div class="col-md-4 d-flex justify-content-end align-items-center">
+            <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-outline-primary me-2">
+                <i class="bi bi-info-circle"></i> Detalles
+            </a>
+            <a asp-action="Index" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Volver
+            </a>
+        </div>
+    </div>
 
-<h4>Book</h4>
-<hr />
-<div class="row">
-    <div class="col-md-4">
-        <form asp-action="Edit">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <input type="hidden" asp-for="Id" />
-            <div class="form-group">
-                <label asp-for="Author" class="control-label"></label>
-                <input asp-for="Author" class="form-control" />
-                <span asp-validation-for="Author" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="Title" class="control-label"></label>
-                <input asp-for="Title" class="form-control" />
-                <span asp-validation-for="Title" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="PublicationDate" class="control-label"></label>
-                <input asp-for="PublicationDate" class="form-control" />
-                <span asp-validation-for="PublicationDate" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <input type="submit" value="Save" class="btn btn-primary" />
-            </div>
-        </form>
+    <div class="card shadow-sm">
+        <div class="card-body p-4">
+            <form asp-action="Edit">
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+                <input type="hidden" asp-for="Id" />
+                <input type="hidden" asp-for="FilePath" />
+                <input type="hidden" asp-for="Content" />
+                <input type="hidden" asp-for="Format" />
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="Title" class="form-label fw-bold">Título</label>
+                        <input asp-for="Title" class="form-control form-control-lg" />
+                        <span asp-validation-for="Title" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="Author" class="form-label fw-bold">Autor</label>
+                        <input asp-for="Author" class="form-control form-control-lg" />
+                        <span asp-validation-for="Author" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="PublicationDate" class="form-label fw-bold">Fecha de publicación</label>
+                        <input asp-for="PublicationDate" class="form-control form-control-lg" type="date" />
+                        <span asp-validation-for="PublicationDate" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="CoverImageUrl" class="form-label fw-bold">URL de la portada</label>
+                        <input asp-for="CoverImageUrl" class="form-control form-control-lg" placeholder="https://ejemplo.com/imagen.jpg" />
+                        <span asp-validation-for="CoverImageUrl" class="text-danger"></span>
+                        <div class="form-text">Ingresa la URL de una imagen para la portada del libro.</div>
+                    </div>
+                </div>
+
+                <div class="row mt-4">
+                    <div class="col-md-12">
+                        <div class="card bg-light">
+                            <div class="card-header">
+                                <h5 class="mb-0">Contenido del libro</h5>
+                            </div>
+                            <div class="card-body">
+                                @if (!string.IsNullOrEmpty(Model.FilePath) || !string.IsNullOrEmpty(Model.Content))
+                                {
+                                    <div class="alert alert-info">
+                                        <i class="bi bi-info-circle"></i> Este libro ya tiene contenido. Puedes verlo en la página de detalles.
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="alert alert-warning">
+                                        <i class="bi bi-exclamation-triangle"></i> Este libro no tiene contenido. Puedes añadirlo desde la página de detalles.
+                                    </div>
+                                }
+                                <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-outline-primary">
+                                    <i class="bi bi-file-earmark-text"></i> Gestionar contenido
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                    <a asp-action="Index" class="btn btn-outline-secondary btn-lg">Cancelar</a>
+                    <button type="submit" class="btn btn-success btn-lg">
+                        <i class="bi bi-check-circle"></i> Guardar cambios
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 
-<div>
-    <a asp-action="Index">Back to List</a>
-</div>
-
 @section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
 }

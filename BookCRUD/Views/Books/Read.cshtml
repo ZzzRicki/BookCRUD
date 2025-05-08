@@ -1,0 +1,276 @@
+﻿@model BookCRUD.Models.Book
+
+@{
+    ViewData["Title"] = Model.Title;
+}
+
+<div class="container-fluid py-3">
+    <div class="row mb-3">
+        <div class="col-md-8">
+            <h1 class="h3 fw-bold">@Model.Title</h1>
+            <p class="text-muted">por @Model.Author</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-info-circle"></i> Detalles
+            </a>
+            <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-left"></i> Volver
+            </a>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body reader-content p-4">
+            @if (Model.Format == BookFormat.PDF)
+            {
+                <div id="pdf-container" class="pdf-viewer">
+                    <div id="pdf-toolbar" class="mb-3">
+                        <div class="btn-toolbar" role="toolbar">
+                            <div class="btn-group me-2" role="group">
+                                <button id="prev" class="btn btn-outline-primary">
+                                    <i class="bi bi-chevron-left"></i> Anterior
+                                </button>
+                                <button id="next" class="btn btn-outline-primary">
+                                    Siguiente <i class="bi bi-chevron-right"></i>
+                                </button>
+                            </div>
+                            <div class="btn-group me-2" role="group">
+                                <span class="btn btn-outline-secondary disabled">
+                                    Página: <span id="page_num">0</span> / <span id="page_count">0</span>
+                                </span>
+                            </div>
+                            <div class="btn-group" role="group">
+                                <button id="zoomOut" class="btn btn-outline-secondary">
+                                    <i class="bi bi-dash-lg"></i>
+                                </button>
+                                <button id="zoomIn" class="btn btn-outline-secondary">
+                                    <i class="bi bi-plus-lg"></i>
+                                </button>
+                                <button id="fullScreen" class="btn btn-outline-secondary">
+                                    <i class="bi bi-fullscreen"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="pdf-viewer-container">
+                        <canvas id="pdf-canvas"></canvas>
+                    </div>
+                </div>
+            }
+            else if (Model.Format == BookFormat.HTML)
+            {
+                @Html.Raw(Model.Content)
+            }
+            else
+            {
+                <div style="white-space: pre-wrap; font-family: 'Georgia', serif; line-height: 1.8;">
+                    @Model.Content
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<div class="reading-controls">
+    <button id="toggleDarkMode" title="Cambiar modo oscuro/claro">
+        <i class="bi bi-moon"></i>
+    </button>
+    <button id="increaseFontSize" title="Aumentar tamaño de fuente">
+        <i class="bi bi-plus-lg"></i>
+    </button>
+    <button id="decreaseFontSize" title="Reducir tamaño de fuente">
+        <i class="bi bi-dash-lg"></i>
+    </button>
+</div>
+
+@section Scripts {
+    @if (Model.Format == BookFormat.PDF)
+    {
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+        <script>
+            // Configuración de PDF.js
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+
+            // Variables
+            let pdfDoc = null,
+                pageNum = 1,
+                pageRendering = false,
+                pageNumPending = null,
+                scale = 1.0,
+                canvas = document.getElementById('pdf-canvas'),
+                ctx = canvas.getContext('2d');
+
+            // Cargar el PDF
+            const loadPdf = async () => {
+                const url = '/files/@Model.FilePath';
+                try {
+                    pdfDoc = await pdfjsLib.getDocument(url).promise;
+                    document.getElementById('page_count').textContent = pdfDoc.numPages;
+                    // Renderizar la primera página
+                    renderPage(pageNum);
+                } catch (error) {
+                    console.error('Error al cargar el PDF:', error);
+                    document.getElementById('pdf-viewer-container').innerHTML =
+                        '<div class="alert alert-danger">Error al cargar el PDF. Por favor, inténtalo de nuevo más tarde.</div>';
+                }
+            };
+
+            // Renderizar una página específica
+            const renderPage = (num) => {
+                pageRendering = true;
+                // Obtener la página
+                pdfDoc.getPage(num).then((page) => {
+                    // Ajustar el tamaño del canvas al tamaño de la página
+                    const viewport = page.getViewport({ scale });
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
+
+                    // Renderizar el PDF en el canvas
+                    const renderContext = {
+                        canvasContext: ctx,
+                        viewport: viewport
+                    };
+                    const renderTask = page.render(renderContext);
+
+                    // Esperar a que termine de renderizar
+                    renderTask.promise.then(() => {
+                        pageRendering = false;
+                        if (pageNumPending !== null) {
+                            // Si hay una página pendiente, renderizarla
+                            renderPage(pageNumPending);
+                            pageNumPending = null;
+                        }
+                    });
+                });
+
+                // Actualizar el número de página actual
+                document.getElementById('page_num').textContent = num;
+            };
+
+            // Ir a la página anterior
+            const prevPage = () => {
+                if (pageNum <= 1) {
+                    return;
+                }
+                pageNum--;
+                queueRenderPage(pageNum);
+            };
+
+            // Ir a la página siguiente
+            const nextPage = () => {
+                if (pageNum >= pdfDoc.numPages) {
+                    return;
+                }
+                pageNum++;
+                queueRenderPage(pageNum);
+            };
+
+            // Poner en cola la renderización de una página
+            const queueRenderPage = (num) => {
+                if (pageRendering) {
+                    pageNumPending = num;
+                } else {
+                    renderPage(num);
+                }
+            };
+
+            // Zoom in
+            const zoomIn = () => {
+                scale += 0.1;
+                renderPage(pageNum);
+            };
+
+            // Zoom out
+            const zoomOut = () => {
+                if (scale <= 0.5) return;
+                scale -= 0.1;
+                renderPage(pageNum);
+            };
+
+            // Pantalla completa
+            const toggleFullScreen = () => {
+                const container = document.getElementById('pdf-viewer-container');
+                if (!document.fullscreenElement) {
+                    container.requestFullscreen().catch(err => {
+                        console.error(`Error al intentar mostrar a pantalla completa: ${err.message}`);
+                    });
+                } else {
+                    document.exitFullscreen();
+                }
+            };
+
+            // Eventos de los botones
+            document.getElementById('prev').addEventListener('click', prevPage);
+            document.getElementById('next').addEventListener('click', nextPage);
+            document.getElementById('zoomIn').addEventListener('click', zoomIn);
+            document.getElementById('zoomOut').addEventListener('click', zoomOut);
+            document.getElementById('fullScreen').addEventListener('click', toggleFullScreen);
+
+            // Eventos de teclado
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'ArrowRight') {
+                    nextPage();
+                } else if (e.key === 'ArrowLeft') {
+                    prevPage();
+                }
+            });
+
+            // Cargar el PDF al cargar la página
+            document.addEventListener('DOMContentLoaded', loadPdf);
+        </script>
+    }
+
+    <script>
+        $(document).ready(function() {
+            // Modo oscuro
+            $('#toggleDarkMode').click(function() {
+                $('body').toggleClass('dark-mode');
+
+                if ($('body').hasClass('dark-mode')) {
+                    $(this).html('<i class="bi bi-sun"></i>');
+                    localStorage.setItem('readingMode', 'dark');
+                } else {
+                    $(this).html('<i class="bi bi-moon"></i>');
+                    localStorage.setItem('readingMode', 'light');
+                }
+            });
+
+            const savedMode = localStorage.getItem('readingMode');
+            if (savedMode === 'dark') {
+                $('body').addClass('dark-mode');
+                $('#toggleDarkMode').html('<i class="bi bi-sun"></i>');
+            }
+
+            if ('@Model.Format' !== 'PDF') {
+                let fontSize = parseInt(localStorage.getItem('fontSize')) || 18;
+                $('.reader-content').css('font-size', fontSize + 'px');
+
+                $('#increaseFontSize').click(function() {
+                    if (fontSize < 24) {
+                        fontSize += 1;
+                        $('.reader-content').css('font-size', fontSize + 'px');
+                        localStorage.setItem('fontSize', fontSize);
+                    }
+                });
+
+                $('#decreaseFontSize').click(function() {
+                    if (fontSize > 14) {
+                        fontSize -= 1;
+                        $('.reader-content').css('font-size', fontSize + 'px');
+                        localStorage.setItem('fontSize', fontSize);
+                    }
+                });
+            }
+
+            $(window).on('beforeunload', function() {
+                localStorage.setItem('readingPosition_@Model.Id', window.scrollY);
+            });
+
+            const savedPosition = localStorage.getItem('readingPosition_@Model.Id');
+            if (savedPosition) {
+                window.scrollTo(0, parseInt(savedPosition));
+            }
+        });
+    </script>
+}

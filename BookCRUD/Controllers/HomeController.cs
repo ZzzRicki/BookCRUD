@@ -1,8 +1,13 @@
-using BookCRUD.Data;
 using BookCRUD.Models;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using BookCRUD.Data;
+using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+using Microsoft.EntityFrameworkCore;
 
 namespace BookCRUD.Controllers
 {
@@ -24,16 +29,27 @@ namespace BookCRUD.Controllers
             var books = from b in _context.Books
                         select b;
 
-            if (!string.IsNullOrEmpty(searchString))
+            if (!String.IsNullOrEmpty(searchString))
             {
-                books = books.Where(s => s.Title.Contains(searchString) ||
-                                         s.Author.Contains(searchString));
+                books = books.Where(s => s.Title.Contains(searchString) || s.Author.Contains(searchString));
             }
 
-            // Obtener los libros más recientes primero
-            books = books.OrderByDescending(b => b.Id);
+            // Seleccionar solo las columnas que sabemos que existen
+            var booksList = await books
+                .Select(b => new Book
+                {
+                    Id = b.Id,
+                    Title = b.Title,
+                    Author = b.Author,
+                    PublicationDate = b.PublicationDate
+                    // No incluimos las nuevas columnas aquí
+                })
+                .OrderByDescending(b => b.PublicationDate)
+                .Take(6)
+                .AsNoTracking()
+                .ToListAsync();
 
-            return View(await books.AsNoTracking().ToListAsync());
+            return View(booksList);
         }
 
         public IActionResult Privacy()

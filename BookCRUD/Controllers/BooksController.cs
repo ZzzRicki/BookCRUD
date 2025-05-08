@@ -7,6 +7,8 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using BookCRUD.Data;
 using BookCRUD.Models;
+using System.IO;
+using Microsoft.AspNetCore.Http;
 
 namespace BookCRUD.Controllers
 {
@@ -16,38 +18,25 @@ namespace BookCRUD.Controllers
 
         public BooksController(ApplicationDbContext context)
         {
-            _context = context ?? throw new ArgumentNullException(nameof(context));
+            _context = context;
         }
 
         // GET: Books
         public async Task<IActionResult> Index(string searchString, string sortOrder)
         {
-            if (_context.Books == null)
-            {
-                return Problem("Entity set 'ApplicationDbContext.Books' is null.");
-            }
-
-            // Guardar el filtro y orden actuales para la vista
-            ViewData["CurrentFilter"] = searchString;
-            ViewData["CurrentSort"] = sortOrder;
-
-            // Parámetros de ordenación
             ViewData["TitleSortParam"] = String.IsNullOrEmpty(sortOrder) ? "title_desc" : "";
             ViewData["AuthorSortParam"] = sortOrder == "author" ? "author_desc" : "author";
             ViewData["DateSortParam"] = sortOrder == "date" ? "date_desc" : "date";
+            ViewData["CurrentFilter"] = searchString;
 
-            // Consulta base
             var books = from b in _context.Books
                         select b;
 
-            // Aplicar filtro de búsqueda si existe
             if (!String.IsNullOrEmpty(searchString))
             {
-                books = books.Where(s => s.Title.Contains(searchString) ||
-                                         s.Author.Contains(searchString));
+                books = books.Where(s => s.Title.Contains(searchString) || s.Author.Contains(searchString));
             }
 
-            // Aplicar ordenación
             switch (sortOrder)
             {
                 case "title_desc":
@@ -70,7 +59,24 @@ namespace BookCRUD.Controllers
                     break;
             }
 
-            return View(await books.AsNoTracking().ToListAsync());
+            // Seleccionar solo las columnas que sabemos que existen
+            var booksList = await books
+                .Select(b => new Book
+                {
+                    Id = b.Id,
+                    Title = b.Title,
+                    Author = b.Author,
+                    PublicationDate = b.PublicationDate,
+                    // Incluir las nuevas columnas con manejo seguro
+                    FilePath = b.FilePath ?? null,
+                    Content = b.Content ?? null,
+                    Format = b.Format,
+                    CoverImageUrl = b.CoverImageUrl ?? null
+                })
+                .AsNoTracking()
+                .ToListAsync();
+
+            return View(booksList);
         }
 
         // GET: Books/Details/5
@@ -82,9 +88,7 @@ namespace BookCRUD.Controllers
             }
 
             var book = await _context.Books
-                .AsNoTracking()
                 .FirstOrDefaultAsync(m => m.Id == id);
-
             if (book == null)
             {
                 return NotFound();
@@ -102,22 +106,20 @@ namespace BookCRUD.Controllers
         // POST: Books/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Author,Title,PublicationDate")] Book book)
+        public async Task<IActionResult> Create([Bind("Title,Author,PublicationDate,Content,CoverImageUrl")] Book book)
         {
-            // Quitamos Id del Bind ya que es autogenerado
             if (ModelState.IsValid)
             {
-                try
+                // Si hay contenido, establecer el formato como Text
+                if (!string.IsNullOrEmpty(book.Content))
                 {
-                    _context.Add(book);
-                    await _context.SaveChangesAsync();
-                    TempData["SuccessMessage"] = "Libro creado correctamente.";
-                    return RedirectToAction(nameof(Index));
+                    book.Format = BookFormat.Text;
                 }
-                catch (Exception ex)
-                {
-                    ModelState.AddModelError("", $"Error al crear el libro: {ex.Message}");
-                }
+
+                _context.Add(book);
+                await _context.SaveChangesAsync();
+                TempData["SuccessMessage"] = "Libro creado correctamente";
+                return RedirectToAction(nameof(Index));
             }
             return View(book);
         }
@@ -141,7 +143,7 @@ namespace BookCRUD.Controllers
         // POST: Books/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Author,Title,PublicationDate")] Book book)
+        public async Task<IActionResult> Edit(int id, [Bind("Id,Title,Author,PublicationDate,FilePath,Content,Format,CoverImageUrl")] Book book)
         {
             if (id != book.Id)
             {
@@ -152,11 +154,15 @@ namespace BookCRUD.Controllers
             {
                 try
                 {
-                    // Usar Entry para marcar la entidad como modificada
-                    _context.Entry(book).State = EntityState.Modified;
+                    // Si hay contenido pero no hay formato establecido, establecerlo como Text
+                    if (!string.IsNullOrEmpty(book.Content) && book.Format == 0)
+                    {
+                        book.Format = BookFormat.Text;
+                    }
+
+                    _context.Update(book);
                     await _context.SaveChangesAsync();
-                    TempData["SuccessMessage"] = "Libro actualizado correctamente.";
-                    return RedirectToAction(nameof(Index));
+                    TempData["SuccessMessage"] = "Libro actualizado correctamente";
                 }
                 catch (DbUpdateConcurrencyException)
                 {
@@ -166,14 +172,10 @@ namespace BookCRUD.Controllers
                     }
                     else
                     {
-                        ModelState.AddModelError("", "El libro ha sido modificado por otro usuario. Por favor, intente nuevamente.");
-                        return View(book);
+                        throw;
                     }
                 }
-                catch (Exception ex)
-                {
-                    ModelState.AddModelError("", $"Error al actualizar el libro: {ex.Message}");
-                }
+                return RedirectToAction(nameof(Index));
             }
             return View(book);
         }
@@ -187,9 +189,7 @@ namespace BookCRUD.Controllers
             }
 
             var book = await _context.Books
-                .AsNoTracking()
                 .FirstOrDefaultAsync(m => m.Id == id);
-
             if (book == null)
             {
                 return NotFound();
@@ -205,29 +205,120 @@ namespace BookCRUD.Controllers
         {
             if (_context.Books == null)
             {
-                return Problem("Entity set 'ApplicationDbContext.Books' is null.");
+                return Problem("Entity set 'ApplicationDbContext.Books'  is null.");
+            }
+            var book = await _context.Books.FindAsync(id);
+            if (book == null)
+            {
+                return NotFound();
             }
 
-            try
+            // Si hay un archivo asociado, eliminarlo
+            if (!string.IsNullOrEmpty(book.FilePath))
             {
-                var book = await _context.Books.FindAsync(id);
-                if (book != null)
+                string filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "files", book.FilePath);
+                if (System.IO.File.Exists(filePath))
                 {
-                    _context.Books.Remove(book);
-                    await _context.SaveChangesAsync();
-                    TempData["SuccessMessage"] = "Libro eliminado correctamente.";
+                    System.IO.File.Delete(filePath);
                 }
-                else
-                {
-                    TempData["ErrorMessage"] = "No se encontró el libro a eliminar.";
-                }
-            }
-            catch (Exception ex)
-            {
-                TempData["ErrorMessage"] = $"Error al eliminar el libro: {ex.Message}";
             }
 
+            _context.Books.Remove(book);
+            await _context.SaveChangesAsync();
+            TempData["SuccessMessage"] = "Libro eliminado correctamente";
             return RedirectToAction(nameof(Index));
+        }
+
+        // GET: Books/Read/5
+        public async Task<IActionResult> Read(int? id)
+        {
+            if (id == null || _context.Books == null)
+            {
+                return NotFound();
+            }
+
+            var book = await _context.Books
+                .FirstOrDefaultAsync(m => m.Id == id);
+
+            if (book == null)
+            {
+                return NotFound();
+            }
+
+            return View(book);
+        }
+
+        // POST: Books/UploadBookFile/5
+        [HttpPost]
+        public async Task<IActionResult> UploadBookFile(int id, IFormFile bookFile)
+        {
+            if (bookFile == null || bookFile.Length == 0)
+            {
+                TempData["ErrorMessage"] = "No se ha seleccionado ningún archivo";
+                return RedirectToAction(nameof(Details), new { id });
+            }
+
+            var book = await _context.Books.FindAsync(id);
+            if (book == null)
+            {
+                return NotFound();
+            }
+
+            // Determinar el formato basado en la extensión
+            string extension = Path.GetExtension(bookFile.FileName).ToLowerInvariant();
+            if (extension == ".pdf")
+            {
+                book.Format = BookFormat.PDF;
+            }
+            else if (extension == ".epub")
+            {
+                book.Format = BookFormat.EPUB;
+            }
+            else if (extension == ".txt")
+            {
+                book.Format = BookFormat.Text;
+
+                // Leer el contenido del archivo de texto
+                using (var reader = new StreamReader(bookFile.OpenReadStream()))
+                {
+                    book.Content = await reader.ReadToEndAsync();
+                }
+
+                _context.Update(book);
+                await _context.SaveChangesAsync();
+
+                TempData["SuccessMessage"] = "Contenido del libro subido correctamente";
+                return RedirectToAction(nameof(Details), new { id = book.Id });
+            }
+            else
+            {
+                TempData["ErrorMessage"] = "Formato de archivo no soportado. Use PDF, EPUB o TXT.";
+                return RedirectToAction(nameof(Details), new { id });
+            }
+
+            // Guardar el archivo
+            string fileName = $"{Guid.NewGuid()}{extension}";
+            string uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "files");
+
+            // Asegurarse de que el directorio existe
+            if (!Directory.Exists(uploadsFolder))
+            {
+                Directory.CreateDirectory(uploadsFolder);
+            }
+
+            string filePath = Path.Combine(uploadsFolder, fileName);
+
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await bookFile.CopyToAsync(stream);
+            }
+
+            book.FilePath = fileName;
+            _context.Update(book);
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = "Archivo del libro subido correctamente";
+            return RedirectToAction(nameof(Details), new { id = book.Id });
         }
 
         private bool BookExists(int id)
